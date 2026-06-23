@@ -20,6 +20,10 @@ Everything runs **100% in the browser** — no server, no data leaves your devic
   strum depending on which side of the screen it's on.
 - **Make a fist** (or take your hands off the screen) to stop playing — the sustained chord
   fades out smoothly and ringing notes decay naturally. Open your hand to resume.
+- **Click a chord pad with your mouse** to toggle it active/inactive — pick the chords you
+  want for a song and the rest deactivate (dashed, dimmed) so your hand can't trigger them.
+  Hit **HIDE UNUSED** to collapse the column to just your active chords (and **SHOW ALL KEYS**
+  to bring them back).
 
 The look is *devotional circuitry*: a PCB-trace background, harp strings rendered as copper
 traces with solder-pad nodes that light magenta when struck, silkscreened chord pads, CRT

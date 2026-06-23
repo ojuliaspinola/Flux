@@ -33,7 +33,7 @@
   #cam, #fx{ position:absolute; top:0; left:0; width:100%; height:100%; }
   #cam{ object-fit:cover; background:#000; transform:scaleX(-1);
     opacity:.20; filter:saturate(.5) hue-rotate(-18deg) contrast(1.06) brightness(.95); }
-  #fx{ pointer-events:none; }   /* NOT mirrored — text stays readable */
+  #fx{ pointer-events:auto; }   /* NOT mirrored — text stays readable; receives pad clicks */
   /* CRT scanlines */
   #scan{ position:absolute; inset:0; pointer-events:none; z-index:5; mix-blend-mode:overlay; opacity:.5;
     background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.35) 3px, rgba(0,0,0,0) 4px); }
@@ -93,28 +93,7 @@
   </div>
 
   <div id="gate">
-    <!-- flesh / machine / holy — devotional-circuitry emblem -->
-    <svg id="emblem" viewBox="0 0 320 232" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <g stroke="#e3a64b" stroke-width="1.3" opacity="0.85">
-        <line x1="160" y1="58" x2="64" y2="182"/>
-        <line x1="160" y1="58" x2="256" y2="182"/>
-        <line x1="64" y1="182" x2="256" y2="182"/>
-      </g>
-      <g>
-        <circle cx="160" cy="58" r="44" fill="#06231a" stroke="#3fe6a6" stroke-width="1.4"/>
-        <circle cx="64" cy="182" r="44" fill="#06231a" stroke="#ff3aa0" stroke-width="1.4"/>
-        <circle cx="256" cy="182" r="44" fill="#06231a" stroke="#69d4ff" stroke-width="1.4"/>
-      </g>
-      <g fill="#d7efe2" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle">
-        <text x="160" y="54">flesh and</text><text x="160" y="66">the organic</text>
-        <text x="64" y="178">robots and</text><text x="64" y="190">the mechanical</text>
-        <text x="256" y="178">angels and</text><text x="256" y="190">the holy</text>
-      </g>
-      <circle cx="160" cy="120" r="3" fill="#e3a64b"/>
-    </svg>
     <h1>FLUX</h1>
-    <div class="tag">devotional circuitry · gesture omnichord</div>
-    <p>Hover the <b>chord pads</b> on the left, then sweep across the <b>harp</b> on the right to strum. Your hands are the strumplate; the circuit sings. No microphone — it makes its own sound.</p>
     <button id="go">Start playing</button>
     <small id="gateNote">Allow camera access when prompted · works with one or two hands · turn your sound on</small>
   </div>
@@ -222,6 +201,25 @@ let strings=[];
 const particles=[];
 const handState=[{},{}];
 
+// which key pads are active (mouse-selectable), and whether to hide the deactivated ones
+const active=new Array(CHORDS.length).fill(true);
+let hideInactive=false;
+const mouse={x:-1,y:-1};
+function activeIndices(){ const a=[]; for(let i=0;i<CHORDS.length;i++) if(active[i]) a.push(i); return a; }
+function displayPads(){ return hideInactive ? activeIndices() : CHORDS.map((_,i)=>i); }
+function ensureValidChord(){ if(chordIdx<0||!active[chordIdx]){ const ai=activeIndices(); if(ai.length){ chordIdx=-1; selectChord(ai[0]); } } }
+function togglePad(ci){
+  if(active[ci]){ if(activeIndices().length<=1) return; active[ci]=false; if(ci===chordIdx) ensureValidChord(); }
+  else active[ci]=true;
+}
+function toggleHide(){ hideInactive=!hideInactive; }
+function padLayout(){
+  const W=canvas.width, H=canvas.height, dpr=devicePixelRatio;
+  const x=10*dpr, w=CHORD_ZONE_R*W-20*dpr, top=6*dpr, bottom=H-58*dpr;
+  const pads=displayPads(), ph=(bottom-top)/Math.max(1,pads.length);
+  return { W,H,dpr,x,w,top,bottom,pads,ph, btn:{ x, y:H-50*dpr, w, h:42*dpr } };
+}
+
 function buildStrings(){
   const ch=CHORDS[Math.max(0,chordIdx)];
   const midis=harpMidis(ch), n=midis.length;
@@ -289,28 +287,35 @@ function draw(){
   g.clearRect(0,0,W,H);
   if(pcb){ g.globalAlpha=0.55; g.drawImage(pcb,0,0); g.globalAlpha=1; }
 
-  // --- chord pads (silkscreened PCB pads) ---
-  const padH=H/CHORDS.length, padX=10*dpr, padW=CHORD_ZONE_R*W-20*dpr;
+  // --- chord pads (silkscreened PCB pads; mouse-selectable) ---
+  const L=padLayout();
   g.textAlign='center'; g.textBaseline='middle';
-  for(let i=0;i<CHORDS.length;i++){
-    const y=i*padH+5*dpr, hgt=padH-10*dpr, sel=i===chordIdx;
-    g.fillStyle = sel?'rgba(255,58,160,0.16)':'rgba(8,46,33,0.55)';
-    g.strokeStyle = sel?'#ff3aa0':'rgba(227,166,75,0.55)';
+  for(let k=0;k<L.pads.length;k++){
+    const ci=L.pads[k], y=L.top+k*L.ph+4*dpr, hgt=L.ph-8*dpr;
+    const sel=ci===chordIdx, deact=!active[ci];
+    const hover = mouse.x>=L.x && mouse.x<=L.x+L.w && mouse.y>=y && mouse.y<=y+hgt;
+    g.fillStyle = sel?'rgba(255,58,160,0.16)':(deact?'rgba(8,28,21,0.42)':'rgba(8,46,33,0.55)');
+    g.strokeStyle = sel?'#ff3aa0':(deact?'rgba(95,138,120,0.42)':'rgba(227,166,75,0.55)');
     g.lineWidth=(sel?2.2:1.3)*dpr;
+    g.setLineDash(deact?[5*dpr,4*dpr]:[]);
     g.shadowColor='#ff3aa0'; g.shadowBlur=sel?16*dpr:0;
-    rr(g,padX,y,padW,hgt,7*dpr); g.fill(); g.stroke(); g.shadowBlur=0;
-    // corner drill vias
-    g.fillStyle='rgba(215,239,226,0.18)';
-    for(const [cx,cy] of [[padX+8*dpr,y+8*dpr],[padX+padW-8*dpr,y+8*dpr],[padX+8*dpr,y+hgt-8*dpr],[padX+padW-8*dpr,y+hgt-8*dpr]]){
-      g.beginPath(); g.arc(cx,cy,2*dpr,0,7); g.fill(); }
-    // lit LED when selected
-    g.fillStyle = sel?'#3fe6a6':'rgba(95,138,120,0.5)';
-    g.shadowColor='#3fe6a6'; g.shadowBlur=sel?12*dpr:0;
-    g.beginPath(); g.arc(padX+12*dpr,y+hgt/2,3.2*dpr,0,7); g.fill(); g.shadowBlur=0;
-    g.fillStyle = sel?'#ffd9ee':'rgba(215,239,226,0.65)';
-    g.font=`600 ${(sel?26:21)*dpr}px IBM Plex Mono, monospace`;
-    g.fillText(CHORDS[i].name, padX+padW/2+6*dpr, y+hgt/2);
+    rr(g,L.x,y,L.w,hgt,7*dpr); g.fill(); g.stroke(); g.shadowBlur=0; g.setLineDash([]);
+    if(hover && !sel){ g.strokeStyle='rgba(215,239,226,0.55)'; g.lineWidth=1.2*dpr;
+      rr(g,L.x+2*dpr,y+2*dpr,L.w-4*dpr,hgt-4*dpr,6*dpr); g.stroke(); }
+    if(!deact){ g.fillStyle=sel?'#3fe6a6':'rgba(95,138,120,0.5)'; g.shadowColor='#3fe6a6'; g.shadowBlur=sel?12*dpr:0;
+      g.beginPath(); g.arc(L.x+12*dpr,y+hgt/2,3.2*dpr,0,7); g.fill(); g.shadowBlur=0; }
+    g.fillStyle = deact?'rgba(150,172,160,0.45)':(sel?'#ffd9ee':'rgba(215,239,226,0.7)');
+    g.font=`600 ${Math.min(26,L.ph*0.42)*dpr}px IBM Plex Mono, monospace`;
+    g.fillText(CHORDS[ci].name, L.x+L.w/2+6*dpr, y+hgt/2);
   }
+  // --- show/hide-deactivated toggle button ---
+  const b=L.btn, bh = mouse.x>=b.x&&mouse.x<=b.x+b.w&&mouse.y>=b.y&&mouse.y<=b.y+b.h;
+  g.fillStyle = bh?'rgba(105,212,255,0.20)':'rgba(6,28,20,0.65)';
+  g.strokeStyle='#69d4ff'; g.lineWidth=1.3*dpr; g.setLineDash([]);
+  rr(g,b.x,b.y,b.w,b.h,6*dpr); g.fill(); g.stroke();
+  g.fillStyle='#c5ecff'; g.font=`600 ${Math.min(12,b.w*0.07)*dpr}px IBM Plex Mono, monospace`;
+  g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(hideInactive?'SHOW ALL KEYS':'HIDE UNUSED', b.x+b.w/2, b.y+b.h/2);
 
   // --- harp: traces with solder pads ---
   const topY=HARP_TOP*H, botY=HARP_BOT*H;
@@ -374,9 +379,13 @@ function loop(){
     const tip=lm[8], nx=1-tip.x, ny=tip.y;
     if(nx<CHORD_ZONE_R){
       st.inHarp=false; st.idx=null;
-      selectChord(Math.max(0,Math.min(CHORDS.length-1,Math.floor(ny*CHORDS.length))));
+      const L=padLayout(), py=ny*canvas.height;
+      if(py>=L.top && py<=L.bottom && L.pads.length){
+        const k=Math.max(0,Math.min(L.pads.length-1,Math.floor((py-L.top)/L.ph)));
+        const ci=L.pads[k]; if(active[ci]) selectChord(ci);
+      }
     } else if(nx>=HARP_L && nx<=HARP_R){
-      if(chordIdx<0) selectChord(0);
+      if(chordIdx<0) ensureValidChord();
       const idx=strumIndex(nx), px=(1-tip.x)*canvas.width, py=ny*canvas.height;
       if(!st.inHarp || st.idx===null){ pluck(idx,0.7,px,py); }
       else if(idx!==st.idx){
@@ -393,6 +402,20 @@ function loop(){
   draw();
   requestAnimationFrame(loop);
 }
+
+// --- mouse / touch: select active key pads + toggle hide ---
+function evtToCanvas(e){ const r=canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)/r.width*canvas.width, y:(e.clientY-r.top)/r.height*canvas.height }; }
+canvas.addEventListener('pointermove', e=>{ const p=evtToCanvas(e); mouse.x=p.x; mouse.y=p.y; });
+canvas.addEventListener('pointerleave', ()=>{ mouse.x=-1; mouse.y=-1; });
+canvas.addEventListener('pointerdown', e=>{
+  const p=evtToCanvas(e), L=padLayout();
+  if(p.x>=L.btn.x && p.x<=L.btn.x+L.btn.w && p.y>=L.btn.y && p.y<=L.btn.y+L.btn.h){ toggleHide(); return; }
+  if(p.x>=L.x && p.x<=L.x+L.w && p.y>=L.top && p.y<=L.bottom){
+    const k=Math.floor((p.y-L.top)/L.ph), ci=L.pads[k];
+    if(ci!=null) togglePad(ci);
+  }
+});
 
 const gate=document.getElementById('gate'), note=document.getElementById('gateNote');
 document.getElementById('go').addEventListener('click', async ()=>{
