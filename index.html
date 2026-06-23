@@ -3,44 +3,76 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Flux — gesture omnichord</title>
+<title>FLUX — devotional circuitry omnichord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{ --bg:#06070d; --fg:#eef1ff; --dim:#7e86b4; --accent:#36e0ff; }
+  :root{
+    --bg:#04100b;
+    --pcb:#0a3526;        /* board green */
+    --trace:#3fe6a6;      /* bright trace */
+    --copper:#e3a64b;     /* gold trace / pads */
+    --magenta:#ff3aa0;    /* hot pink heart-PCB */
+    --crt:#69d4ff;        /* CRT blue glow */
+    --silk:#d7efe2;       /* silkscreen off-white */
+    --dim:#5f8a78;
+    --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ height:100%; }
   body{
-    background:radial-gradient(circle at 50% 25%, #11142e 0%, var(--bg) 72%);
-    color:var(--fg); font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(circle at 50% 30%, #0b2418 0%, var(--bg) 70%);
+    color:var(--silk); font-family:var(--mono);
     overflow:hidden; -webkit-user-select:none; user-select:none;
   }
   #stage{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
-  #wrap{ position:relative; border-radius:18px; box-shadow:0 0 70px rgba(54,224,255,.18), 0 0 0 1px rgba(54,224,255,.16); }
-  #cam, #fx{ position:absolute; top:0; left:0; width:100%; height:100%; border-radius:18px; }
-  #cam{ object-fit:cover; background:#000; transform:scaleX(-1); opacity:.32; filter:saturate(.8) contrast(1.05); }
+  #wrap{ position:relative; border-radius:14px;
+    box-shadow:0 0 80px rgba(63,230,166,.14), 0 0 0 1px rgba(227,166,75,.30),
+               inset 0 0 0 1px rgba(63,230,166,.10); background:#051611; overflow:hidden; }
+  #cam, #fx{ position:absolute; top:0; left:0; width:100%; height:100%; }
+  #cam{ object-fit:cover; background:#000; transform:scaleX(-1);
+    opacity:.20; filter:saturate(.5) hue-rotate(-18deg) contrast(1.06) brightness(.95); }
   #fx{ pointer-events:none; }   /* NOT mirrored — text stays readable */
+  /* CRT scanlines */
+  #scan{ position:absolute; inset:0; pointer-events:none; z-index:5; mix-blend-mode:overlay; opacity:.5;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.35) 3px, rgba(0,0,0,0) 4px); }
 
-  #hud{ position:absolute; inset:0; pointer-events:none; }
-  .panel{ position:absolute; background:rgba(9,11,24,.5); backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px); border:1px solid rgba(54,224,255,.2); border-radius:14px; padding:10px 16px; }
-  #top{ top:16px; left:50%; transform:translateX(-50%); text-align:center; min-width:220px; }
-  #brand{ font-size:11px; letter-spacing:.45em; color:var(--dim); font-weight:600; }
-  #chordName{ font-size:34px; font-weight:800; line-height:1.05; color:var(--accent); transition:color .15s; }
-  #sub{ font-size:11px; color:var(--dim); letter-spacing:.04em; margin-top:2px;}
-  #hint{ bottom:16px; left:50%; transform:translateX(-50%); font-size:12.5px; color:var(--dim); text-align:center;}
-  #hint b{ color:var(--fg); }
+  #hud{ position:absolute; inset:0; pointer-events:none; z-index:6; }
+  .panel{ position:absolute; background:rgba(6,28,20,.62); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px); border:1px solid rgba(227,166,75,.45);
+    border-radius:6px; padding:9px 16px; box-shadow:0 0 0 1px rgba(63,230,166,.08) inset; }
+  #top{ top:14px; left:50%; transform:translateX(-50%); text-align:center; min-width:230px; }
+  #brand{ font-size:9.5px; letter-spacing:.42em; color:var(--copper); font-weight:600; }
+  #chordName{ font-size:36px; font-weight:700; line-height:1.05; color:var(--trace);
+    text-shadow:0 0 14px rgba(63,230,166,.65), 0 0 30px rgba(63,230,166,.30); transition:all .12s; }
+  #chordName.idle{ color:var(--dim); text-shadow:none; }
+  #sub{ font-size:10px; color:var(--dim); letter-spacing:.18em; margin-top:3px; text-transform:uppercase;}
+  #hint{ bottom:14px; left:50%; transform:translateX(-50%); font-size:11.5px; color:var(--dim);
+    text-align:center; letter-spacing:.04em;}
+  #hint b{ color:var(--silk); font-weight:600; }
+  #hint .mag{ color:var(--magenta); }
 
-  #gate{ position:absolute; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; text-align:center; gap:16px; padding:24px;
-    background:radial-gradient(circle at 50% 35%, #14173a 0%, #06070d 75%); }
-  #gate h1{ font-size:clamp(46px,12vw,118px); font-weight:900; letter-spacing:.04em;
-    background:linear-gradient(120deg,#36e0ff,#7c5cff 55%,#ff5cc8); -webkit-background-clip:text;
-    background-clip:text; color:transparent; }
-  #gate p{ color:var(--dim); max-width:480px; line-height:1.6; font-size:15px; }
-  #gate small{ color:#5a608a; font-size:12px; max-width:440px; line-height:1.5;}
-  #go{ margin-top:4px; cursor:pointer; pointer-events:auto; font-size:17px; font-weight:700; color:#04121a;
-    padding:15px 42px; border:none; border-radius:40px; background:linear-gradient(120deg,#36e0ff,#7c5cff);
-    box-shadow:0 8px 30px rgba(54,224,255,.4); transition:transform .15s; }
-  #go:hover{ transform:translateY(-2px) scale(1.02); } #go:active{ transform:scale(.98); }
+  #gate{ position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; gap:12px; padding:24px;
+    background:radial-gradient(circle at 50% 38%, #0c2a1d 0%, #03100a 76%); }
+  #emblem{ width:min(300px,72vw); margin-bottom:4px; }
+  #gate h1{ font-size:clamp(44px,11vw,104px); font-weight:700; letter-spacing:.10em;
+    background:linear-gradient(110deg,var(--trace),var(--crt) 40%,var(--magenta) 90%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 22px rgba(63,230,166,.35)); }
+  #gate .tag{ font-size:10px; letter-spacing:.5em; color:var(--copper); text-transform:uppercase; margin-top:-6px;}
+  #gate p{ color:#9fc4b4; max-width:500px; line-height:1.65; font-size:14px; margin-top:6px;}
+  #gate p b{ color:var(--trace); font-weight:600; }
+  #gate small{ color:var(--dim); font-size:11px; max-width:440px; line-height:1.5; letter-spacing:.02em;}
+  #go{ margin-top:8px; cursor:pointer; pointer-events:auto; font-family:var(--mono);
+    font-size:15px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#05140e;
+    padding:15px 40px; border:none; border-radius:6px;
+    background:linear-gradient(120deg,var(--trace),var(--copper));
+    box-shadow:0 0 28px rgba(63,230,166,.45), 0 0 0 1px rgba(227,166,75,.6);
+    transition:transform .15s, box-shadow .15s; }
+  #go:hover{ transform:translateY(-2px); box-shadow:0 0 38px rgba(255,58,160,.5), 0 0 0 1px var(--magenta); }
+  #go:active{ transform:scale(.98); }
   .hide{ display:none !important; } .err{ color:#ff7a90 !important; }
 </style>
 </head>
@@ -48,22 +80,43 @@
   <div id="stage"><div id="wrap">
     <video id="cam" autoplay playsinline muted></video>
     <canvas id="fx"></canvas>
+    <div id="scan"></div>
   </div></div>
 
   <div id="hud">
     <div id="top" class="panel">
-      <div id="brand">F L U X &nbsp;·&nbsp; O M N I C H O R D</div>
-      <div id="chordName">C</div>
+      <div id="brand">F L U X &nbsp;//&nbsp; O M N I C H O R D</div>
+      <div id="chordName" class="idle">—</div>
       <div id="sub">Key of C major</div>
     </div>
-    <div id="hint" class="panel"><b>Left</b> hand picks a chord pad · <b>Right</b> hand strums the harp · sweep fast to arpeggiate</div>
+    <div id="hint" class="panel"><b>Left</b> = chord pads · <b>Right</b> = strum the harp · <span class="mag">make a fist</span> to let it ring out</div>
   </div>
 
   <div id="gate">
+    <!-- flesh / machine / holy — devotional-circuitry emblem -->
+    <svg id="emblem" viewBox="0 0 320 232" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#e3a64b" stroke-width="1.3" opacity="0.85">
+        <line x1="160" y1="58" x2="64" y2="182"/>
+        <line x1="160" y1="58" x2="256" y2="182"/>
+        <line x1="64" y1="182" x2="256" y2="182"/>
+      </g>
+      <g>
+        <circle cx="160" cy="58" r="44" fill="#06231a" stroke="#3fe6a6" stroke-width="1.4"/>
+        <circle cx="64" cy="182" r="44" fill="#06231a" stroke="#ff3aa0" stroke-width="1.4"/>
+        <circle cx="256" cy="182" r="44" fill="#06231a" stroke="#69d4ff" stroke-width="1.4"/>
+      </g>
+      <g fill="#d7efe2" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle">
+        <text x="160" y="54">flesh and</text><text x="160" y="66">the organic</text>
+        <text x="64" y="178">robots and</text><text x="64" y="190">the mechanical</text>
+        <text x="256" y="178">angels and</text><text x="256" y="190">the holy</text>
+      </g>
+      <circle cx="160" cy="120" r="3" fill="#e3a64b"/>
+    </svg>
     <h1>FLUX</h1>
-    <p>A gesture-played <b>omnichord</b>. Hover the chord pads on the left to pick a chord, then sweep your hand across the harp strings on the right to strum. It makes its own sound — no microphone needed.</p>
+    <div class="tag">devotional circuitry · gesture omnichord</div>
+    <p>Hover the <b>chord pads</b> on the left, then sweep across the <b>harp</b> on the right to strum. Your hands are the strumplate; the circuit sings. No microphone — it makes its own sound.</p>
     <button id="go">Start playing</button>
-    <small id="gateNote">Allow camera access when prompted · works with one or two hands · sound recommended</small>
+    <small id="gateNote">Allow camera access when prompted · works with one or two hands · turn your sound on</small>
   </div>
 
 <script type="module">
@@ -72,99 +125,83 @@ import { FilesetResolver, HandLandmarker }
 
 /* ===================== Music theory ===================== */
 const QUAL = { maj:[0,4,7], min:[0,3,7], dim:[0,3,6] };
-// Diatonic chords in C major
 const CHORDS = [
-  {name:'C',    root:60, q:'maj'},
-  {name:'Dm',   root:62, q:'min'},
-  {name:'Em',   root:64, q:'min'},
-  {name:'F',    root:65, q:'maj'},
-  {name:'G',    root:67, q:'maj'},
-  {name:'Am',   root:69, q:'min'},
-  {name:'B°',   root:71, q:'dim'},
+  {name:'C',  root:60, q:'maj'}, {name:'Dm', root:62, q:'min'},
+  {name:'Em', root:64, q:'min'}, {name:'F',  root:65, q:'maj'},
+  {name:'G',  root:67, q:'maj'}, {name:'Am', root:69, q:'min'},
+  {name:'B°', root:71, q:'dim'},
 ];
 const m2f = m => 440 * Math.pow(2,(m-69)/12);
-
-function harpMidis(chord){
-  const iv = QUAL[chord.q]; const set=new Set();
-  for(let oct=-1; oct<=2; oct++) for(const i of iv){
-    const m = chord.root + i + 12*oct;
-    if(m>=45 && m<=93) set.add(m);
-  }
-  return [...set].sort((a,b)=>a-b);
-}
-function padMidis(chord){
-  const iv = QUAL[chord.q];
-  return [chord.root-12, ...iv.map(i=>chord.root+i)];
-}
+function harpMidis(ch){ const iv=QUAL[ch.q], set=new Set();
+  for(let o=-1;o<=2;o++) for(const i of iv){ const m=ch.root+i+12*o; if(m>=45&&m<=93) set.add(m); }
+  return [...set].sort((a,b)=>a-b); }
+function padMidis(ch){ const iv=QUAL[ch.q]; return [ch.root-12, ...iv.map(i=>ch.root+i)]; }
 
 /* ===================== Synth ===================== */
 class Synth{
   async init(){
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    await ctx.resume();
-    this.ctx = ctx;
-    this.comp = ctx.createDynamicsCompressor();
-    this.master = ctx.createGain(); this.master.gain.value = 0.9;
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    await ctx.resume(); this.ctx=ctx;
+    this.comp=ctx.createDynamicsCompressor();
+    this.master=ctx.createGain(); this.master.gain.value=0.9;
     this.master.connect(this.comp); this.comp.connect(ctx.destination);
-
-    this.dry = ctx.createGain(); this.dry.gain.value = 0.85; this.dry.connect(this.master);
-    this.verb = ctx.createConvolver(); this.verb.buffer = this.impulse(2.4, 2.6);
-    this.verbGain = ctx.createGain(); this.verbGain.gain.value = 0.55;
+    this.dry=ctx.createGain(); this.dry.gain.value=0.85; this.dry.connect(this.master);
+    this.verb=ctx.createConvolver(); this.verb.buffer=this.impulse(2.6,2.6);
+    this.verbGain=ctx.createGain(); this.verbGain.gain.value=0.6;
     this.verb.connect(this.verbGain); this.verbGain.connect(this.master);
-
-    this.padBus = ctx.createGain(); this.padBus.gain.value = 1; this._send(this.padBus);
-    this.padVoices = [];
+    this.padBus=ctx.createGain(); this.padBus.gain.value=0.0001;   // silent until a hand plays
+    this._send(this.padBus);
+    this.padVoices=[];
   }
-  _send(node){ node.connect(this.dry); node.connect(this.verb); }
-  impulse(dur, decay){
-    const rate=this.ctx.sampleRate, len=Math.floor(rate*dur);
-    const b=this.ctx.createBuffer(2,len,rate);
+  _send(n){ n.connect(this.dry); n.connect(this.verb); }
+  impulse(dur,decay){ const r=this.ctx.sampleRate, len=Math.floor(r*dur);
+    const b=this.ctx.createBuffer(2,len,r);
     for(let c=0;c<2;c++){ const d=b.getChannelData(c);
-      for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay); }
-    return b;
-  }
-  pluck(freq, vel){
+      for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay); } return b; }
+  pluck(freq,vel){
     const ctx=this.ctx, now=ctx.currentTime;
     const o1=ctx.createOscillator(); o1.type='triangle'; o1.frequency.value=freq;
     const o2=ctx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2.001;
-    const g=ctx.createGain();
-    const f=ctx.createBiquadFilter(); f.type='lowpass';
-    f.frequency.value=900+vel*5200; f.Q.value=0.6;
+    const g=ctx.createGain(), f=ctx.createBiquadFilter();
+    f.type='lowpass'; f.frequency.value=900+vel*5200; f.Q.value=0.6;
     const peak=0.22*vel;
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(peak, now+0.006);
-    g.gain.exponentialRampToValueAtTime(0.0001, now+1.5);
+    g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(peak,now+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+1.5);
     o1.connect(g); const o2g=ctx.createGain(); o2g.gain.value=0.35; o2.connect(o2g); o2g.connect(g);
     g.connect(f); this._send(f);
     o1.start(now); o2.start(now); o1.stop(now+1.6); o2.stop(now+1.6);
   }
   setPad(midis){
     const ctx=this.ctx, now=ctx.currentTime;
-    // fade out previous
-    for(const v of this.padVoices){
-      v.g.gain.cancelScheduledValues(now);
-      v.g.gain.setTargetAtTime(0.0001, now, 0.18);
-      v.o1.stop(now+1.0); v.o2.stop(now+1.0);
-    }
-    this.padVoices = [];
-    for(const m of midis){
-      const f=m2f(m);
+    for(const v of this.padVoices){ v.g.gain.cancelScheduledValues(now);
+      v.g.gain.setTargetAtTime(0.0001,now,0.18); v.o1.stop(now+1.0); v.o2.stop(now+1.0); }
+    this.padVoices=[];
+    for(const m of midis){ const f=m2f(m);
       const o1=ctx.createOscillator(); o1.type='triangle'; o1.frequency.value=f;
       const o2=ctx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*1.004;
       const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1400; lp.Q.value=0.4;
       const g=ctx.createGain(); g.gain.value=0.0001;
       o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(this.padBus);
       o1.start(now); o2.start(now);
-      g.gain.setTargetAtTime(0.045, now, 0.25);
-      this.padVoices.push({o1,o2,g});
-    }
+      g.gain.setTargetAtTime(0.045,now,0.25);
+      this.padVoices.push({o1,o2,g}); }
+  }
+  // fade the whole sustained chord up (a hand is playing) or out (fist / hands gone)
+  setPadActive(on){
+    const now=this.ctx.currentTime;
+    this.padBus.gain.cancelScheduledValues(now);
+    this.padBus.gain.setTargetAtTime(on?1:0.0001, now, on?0.07:0.5);
   }
 }
 
 /* ===================== Hand helpers ===================== */
 const CONNECTIONS=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
   [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-const TIPS=[4,8,12,16,20];
+const TIPS=[4,8,12,16,20], JOINTS=[2,6,10,14,18];
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function openCount(lm){ const w=lm[0]; let n=0;
+  for(let i=0;i<5;i++) if(dist(lm[TIPS[i]],w)>dist(lm[JOINTS[i]],w)*1.05) n++; return n; }
 
 /* ===================== App ===================== */
 const video=document.getElementById('cam');
@@ -175,53 +212,62 @@ const elName=document.getElementById('chordName');
 
 const synth=new Synth();
 let landmarker=null, hands=[], lastVT=-1;
+let pcb=null, padActive=false;
+const handOpen=[];
 
-// layout (normalized, in mirrored/visual space)
-const CHORD_ZONE_R = 0.30;
-const HARP_L = 0.34, HARP_R = 0.985, HARP_TOP=0.06, HARP_BOT=0.96;
+const CHORD_ZONE_R=0.30, HARP_L=0.34, HARP_R=0.985, HARP_TOP=0.07, HARP_BOT=0.95;
 
-let chordIdx=0;
-let strings=[];        // {x, freq, hue, energy}
+let chordIdx=-1;
+let strings=[];
 const particles=[];
-const handState=[{},{}];   // per hand-order strum memory
+const handState=[{},{}];
 
 function buildStrings(){
-  const ch=CHORDS[chordIdx];
-  const midis=harpMidis(ch);
-  const n=midis.length;
-  strings = midis.map((m,i)=>({
-    x: HARP_L + (i+0.5)/n*(HARP_R-HARP_L),
-    freq: m2f(m),
-    hue: 190 + i/n*150,
-    energy: 0,
+  const ch=CHORDS[Math.max(0,chordIdx)];
+  const midis=harpMidis(ch), n=midis.length;
+  strings=midis.map((m,i)=>({
+    x:HARP_L+(i+0.5)/n*(HARP_R-HARP_L), freq:m2f(m),
+    hue:150+i/n*180,            // green → cyan → magenta across the harp
+    energy:0,
   }));
-  // reset strum memory so restring doesn't trigger a sweep
   handState.forEach(s=>{ s.idx=null; });
 }
 function selectChord(i){
   if(i===chordIdx) return;
-  chordIdx=i;
-  const ch=CHORDS[i];
-  buildStrings();
-  synth.setPad(padMidis(ch));
+  chordIdx=i; const ch=CHORDS[i];
+  buildStrings(); synth.setPad(padMidis(ch));
   elName.textContent=ch.name;
 }
-
-function strumIndex(nx){
-  const t=(nx-HARP_L)/(HARP_R-HARP_L);
-  return Math.max(0, Math.min(strings.length-1, Math.floor(t*strings.length)));
-}
-function pluck(i, vel, px, py){
+function strumIndex(nx){ const t=(nx-HARP_L)/(HARP_R-HARP_L);
+  return Math.max(0,Math.min(strings.length-1,Math.floor(t*strings.length))); }
+function pluck(i,vel,px,py){
   const s=strings[i]; if(!s) return;
-  synth.pluck(s.freq, vel);
-  s.energy=1;
-  const W=canvas.width, H=canvas.height;
+  synth.pluck(s.freq,vel); s.energy=1;
   const n=Math.floor(vel*5)+2;
-  for(let k=0;k<n;k++){
-    if(particles.length>500) break;
+  for(let k=0;k<n;k++){ if(particles.length>520) break;
     const a=Math.random()*Math.PI*2, sp=(0.5+Math.random()*2.4)*vel;
-    particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,hue:s.hue,size:2+Math.random()*3});
+    particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,hue:s.hue,size:2+Math.random()*3}); }
+}
+
+function buildPCB(W,H){
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d'); x.lineCap='square'; x.lineJoin='miter';
+  const grid=Math.max(22,Math.round(W/40));
+  x.lineWidth=Math.max(1.1,W/1300);
+  const n=Math.round(W*H/8200);
+  for(let i=0;i<n;i++){
+    const green=Math.random()<0.62;
+    x.strokeStyle=green?'rgba(63,230,166,0.16)':'rgba(227,166,75,0.15)';
+    let px=Math.round(Math.random()*(W/grid))*grid, py=Math.round(Math.random()*(H/grid))*grid;
+    x.beginPath(); x.moveTo(px,py);
+    const segs=2+Math.floor(Math.random()*4);
+    for(let s=0;s<segs;s++){ if(Math.random()<0.5) px+=(Math.random()<0.5?-1:1)*grid*(1+Math.floor(Math.random()*3));
+      else py+=(Math.random()<0.5?-1:1)*grid*(1+Math.floor(Math.random()*3)); x.lineTo(px,py); }
+    x.stroke();
+    x.fillStyle=green?'rgba(63,230,166,0.34)':'rgba(227,166,75,0.30)';
+    x.beginPath(); x.arc(px,py,x.lineWidth*2.0,0,7); x.fill();
   }
+  return c;
 }
 
 function fitStage(){
@@ -229,71 +275,84 @@ function fitStage(){
   const vw=window.innerWidth, vh=window.innerHeight;
   let w=vw, h=vw/ar; if(h>vh){ h=vh; w=vh*ar; }
   wrap.style.width=w+'px'; wrap.style.height=h+'px';
-  canvas.width=Math.round(w*devicePixelRatio);
-  canvas.height=Math.round(h*devicePixelRatio);
+  canvas.width=Math.round(w*devicePixelRatio); canvas.height=Math.round(h*devicePixelRatio);
+  pcb=buildPCB(canvas.width,canvas.height);
 }
 window.addEventListener('resize', fitStage);
 
-function draw(){
-  const W=canvas.width, H=canvas.height;
-  g.clearRect(0,0,W,H);
+function ring(c,x,y,r,lw){ c.lineWidth=lw; c.beginPath(); c.arc(x,y,r,0,7); c.stroke(); }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 
-  // --- chord pads (left zone) ---
-  const padH=H/CHORDS.length;
+function draw(){
+  const W=canvas.width, H=canvas.height, dpr=devicePixelRatio;
+  g.clearRect(0,0,W,H);
+  if(pcb){ g.globalAlpha=0.55; g.drawImage(pcb,0,0); g.globalAlpha=1; }
+
+  // --- chord pads (silkscreened PCB pads) ---
+  const padH=H/CHORDS.length, padX=10*dpr, padW=CHORD_ZONE_R*W-20*dpr;
   g.textAlign='center'; g.textBaseline='middle';
   for(let i=0;i<CHORDS.length;i++){
-    const y=i*padH, sel=i===chordIdx;
-    g.fillStyle = sel ? 'rgba(54,224,255,0.22)' : 'rgba(255,255,255,0.04)';
-    g.strokeStyle = sel ? 'rgba(54,224,255,0.85)' : 'rgba(255,255,255,0.10)';
-    g.lineWidth=2*devicePixelRatio;
-    rr(g, 8*devicePixelRatio, y+4*devicePixelRatio, CHORD_ZONE_R*W-16*devicePixelRatio, padH-8*devicePixelRatio, 10*devicePixelRatio);
-    g.fill(); g.stroke();
-    g.fillStyle = sel ? '#bff4ff' : 'rgba(255,255,255,0.5)';
-    g.font=`${(sel?26:20)*devicePixelRatio}px Segoe UI, sans-serif`;
-    g.fillText(CHORDS[i].name, (CHORD_ZONE_R*W)/2, y+padH/2);
+    const y=i*padH+5*dpr, hgt=padH-10*dpr, sel=i===chordIdx;
+    g.fillStyle = sel?'rgba(255,58,160,0.16)':'rgba(8,46,33,0.55)';
+    g.strokeStyle = sel?'#ff3aa0':'rgba(227,166,75,0.55)';
+    g.lineWidth=(sel?2.2:1.3)*dpr;
+    g.shadowColor='#ff3aa0'; g.shadowBlur=sel?16*dpr:0;
+    rr(g,padX,y,padW,hgt,7*dpr); g.fill(); g.stroke(); g.shadowBlur=0;
+    // corner drill vias
+    g.fillStyle='rgba(215,239,226,0.18)';
+    for(const [cx,cy] of [[padX+8*dpr,y+8*dpr],[padX+padW-8*dpr,y+8*dpr],[padX+8*dpr,y+hgt-8*dpr],[padX+padW-8*dpr,y+hgt-8*dpr]]){
+      g.beginPath(); g.arc(cx,cy,2*dpr,0,7); g.fill(); }
+    // lit LED when selected
+    g.fillStyle = sel?'#3fe6a6':'rgba(95,138,120,0.5)';
+    g.shadowColor='#3fe6a6'; g.shadowBlur=sel?12*dpr:0;
+    g.beginPath(); g.arc(padX+12*dpr,y+hgt/2,3.2*dpr,0,7); g.fill(); g.shadowBlur=0;
+    g.fillStyle = sel?'#ffd9ee':'rgba(215,239,226,0.65)';
+    g.font=`600 ${(sel?26:21)*dpr}px IBM Plex Mono, monospace`;
+    g.fillText(CHORDS[i].name, padX+padW/2+6*dpr, y+hgt/2);
   }
 
-  // --- harp strings ---
+  // --- harp: traces with solder pads ---
+  const topY=HARP_TOP*H, botY=HARP_BOT*H;
   for(const s of strings){
-    const x=s.x*W;
-    const bow=s.energy*26*devicePixelRatio;
-    g.strokeStyle=`hsla(${s.hue},90%,${55+s.energy*25}%,${0.32+s.energy*0.68})`;
-    g.lineWidth=(1.4+s.energy*3)*devicePixelRatio;
-    g.shadowColor=`hsl(${s.hue},90%,60%)`; g.shadowBlur=s.energy*18*devicePixelRatio;
-    g.beginPath();
-    g.moveTo(x, HARP_TOP*H);
-    g.quadraticCurveTo(x+bow*Math.sin(performance.now()/60), H/2, x, HARP_BOT*H);
-    g.stroke();
+    const x=s.x*W, glow=s.energy;
+    const bow=glow*24*dpr*Math.sin(performance.now()/55);
+    const col=`hsl(${s.hue},85%,${52+glow*30}%)`;
+    g.strokeStyle=`hsla(${s.hue},85%,${52+glow*30}%,${0.30+glow*0.7})`;
+    g.lineWidth=(1.3+glow*3.2)*dpr;
+    g.shadowColor=col; g.shadowBlur=glow*20*dpr;
+    g.beginPath(); g.moveTo(x,topY); g.quadraticCurveTo(x+bow,(topY+botY)/2,x,botY); g.stroke();
+    // solder pads (top & bottom)
+    g.strokeStyle=`hsla(${s.hue},85%,${55+glow*25}%,${0.5+glow*0.5})`;
+    ring(g,x,topY,(4+glow*3)*dpr,(1.4+glow*1.6)*dpr);
+    ring(g,x,botY,(4+glow*3)*dpr,(1.4+glow*1.6)*dpr);
+    g.fillStyle=col; g.globalAlpha=0.25+glow*0.75;
+    g.beginPath(); g.arc(x,topY,1.6*dpr,0,7); g.fill();
+    g.beginPath(); g.arc(x,botY,1.6*dpr,0,7); g.fill(); g.globalAlpha=1;
     s.energy*=0.90;
   }
   g.shadowBlur=0;
 
   // --- particles ---
   g.globalCompositeOperation='lighter';
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    p.x+=p.vx*devicePixelRatio; p.y+=p.vy*devicePixelRatio; p.vy+=0.04*devicePixelRatio; p.life-=0.025;
+  for(let i=particles.length-1;i>=0;i--){ const p=particles[i];
+    p.x+=p.vx*dpr; p.y+=p.vy*dpr; p.vy+=0.04*dpr; p.life-=0.025;
     if(p.life<=0){ particles.splice(i,1); continue; }
-    g.globalAlpha=p.life; g.fillStyle=`hsl(${p.hue},90%,65%)`;
-    g.beginPath(); g.arc(p.x,p.y,p.size*p.life*devicePixelRatio,0,7); g.fill();
-  }
+    g.globalAlpha=p.life; g.fillStyle=`hsl(${p.hue},90%,66%)`;
+    g.beginPath(); g.arc(p.x,p.y,p.size*p.life*dpr,0,7); g.fill(); }
   g.globalAlpha=1; g.globalCompositeOperation='source-over';
 
-  // --- hands ---
-  hands.forEach(lm=>{
-    g.strokeStyle='rgba(255,255,255,0.85)'; g.lineWidth=3*devicePixelRatio;
-    g.shadowColor='#36e0ff'; g.shadowBlur=10*devicePixelRatio;
-    for(const [a,b] of CONNECTIONS){
-      g.beginPath();
-      g.moveTo((1-lm[a].x)*W, lm[a].y*H);
-      g.lineTo((1-lm[b].x)*W, lm[b].y*H);
-      g.stroke();
-    }
+  // --- hands (bright = playing, dim copper = fist/muted) ---
+  hands.forEach((lm,h)=>{
+    const open=handOpen[h];
+    const c = open?'#3fe6a6':'rgba(227,166,75,0.55)';
+    g.strokeStyle=c; g.lineWidth=(open?3:2)*dpr;
+    g.shadowColor=open?'#3fe6a6':'transparent'; g.shadowBlur=open?9*dpr:0;
+    for(const [a,b] of CONNECTIONS){ g.beginPath();
+      g.moveTo((1-lm[a].x)*W,lm[a].y*H); g.lineTo((1-lm[b].x)*W,lm[b].y*H); g.stroke(); }
     g.shadowBlur=0;
-    for(let i=0;i<lm.length;i++){
-      g.fillStyle = TIPS.includes(i)?'#36e0ff':'rgba(255,255,255,0.7)';
-      g.beginPath(); g.arc((1-lm[i].x)*W, lm[i].y*H, (TIPS.includes(i)?6:3)*devicePixelRatio,0,7); g.fill();
-    }
+    for(let i=0;i<lm.length;i++){ g.fillStyle=TIPS.includes(i)?(open?'#ff3aa0':'rgba(227,166,75,0.6)'):c;
+      g.beginPath(); g.arc((1-lm[i].x)*W,lm[i].y*H,(TIPS.includes(i)?5.5:3)*dpr,0,7); g.fill(); }
   });
 }
 
@@ -301,49 +360,41 @@ function loop(){
   const now=performance.now();
   if(landmarker && video.readyState>=2 && video.currentTime!==lastVT){
     lastVT=video.currentTime;
-    try{ hands=(landmarker.detectForVideo(video, now).landmarks)||[]; }catch(e){}
+    try{ hands=(landmarker.detectForVideo(video,now).landmarks)||[]; }catch(e){}
   }
 
-  const W=canvas.width, H=canvas.height;
-  const activeHands = hands.length;
+  const n=hands.length; handOpen.length=0; let anyActive=false;
   for(let h=0;h<2;h++){
     const st=handState[h];
-    if(h>=activeHands){ st.idx=null; st.inHarp=false; continue; }
+    if(h>=n){ st.idx=null; st.inHarp=false; continue; }
     const lm=hands[h];
-    const tip=lm[8];                 // index fingertip
-    const nx=1-tip.x, ny=tip.y;      // visual/mirrored space
-
-    if(nx < CHORD_ZONE_R){           // chord selector zone
+    const open=openCount(lm)>=2; handOpen[h]=open;
+    if(!open){ st.idx=null; st.inHarp=false; continue; }   // fist → no new notes
+    anyActive=true;
+    const tip=lm[8], nx=1-tip.x, ny=tip.y;
+    if(nx<CHORD_ZONE_R){
       st.inHarp=false; st.idx=null;
-      const pad=Math.max(0,Math.min(CHORDS.length-1, Math.floor(ny*CHORDS.length)));
-      selectChord(pad);
-    } else if(nx >= HARP_L && nx <= HARP_R){   // strum zone
-      const idx=strumIndex(nx);
-      const px=(1-tip.x)*W, py=ny*H;
-      if(!st.inHarp || st.idx===null){
-        pluck(idx, 0.7, px, py);
-      } else if(idx!==st.idx){
-        const step = idx>st.idx?1:-1;
-        const vel = Math.min(1, 0.5 + Math.abs(nx-(st.nx??nx))*5);
-        let count=0;
-        for(let s=st.idx+step; s!==idx+step && count<8; s+=step, count++) pluck(s, vel, px, py);
+      selectChord(Math.max(0,Math.min(CHORDS.length-1,Math.floor(ny*CHORDS.length))));
+    } else if(nx>=HARP_L && nx<=HARP_R){
+      if(chordIdx<0) selectChord(0);
+      const idx=strumIndex(nx), px=(1-tip.x)*canvas.width, py=ny*canvas.height;
+      if(!st.inHarp || st.idx===null){ pluck(idx,0.7,px,py); }
+      else if(idx!==st.idx){
+        const step=idx>st.idx?1:-1, vel=Math.min(1,0.5+Math.abs(nx-(st.nx??nx))*5);
+        let cnt=0; for(let s=st.idx+step; s!==idx+step && cnt<8; s+=step,cnt++) pluck(s,vel,px,py);
       }
       st.inHarp=true; st.idx=idx; st.nx=nx;
-    } else {
-      st.inHarp=false; st.idx=null;  // in the deadzone gap
-    }
+    } else { st.inHarp=false; st.idx=null; }
   }
+
+  if(anyActive!==padActive){ if(synth.ctx) synth.setPadActive(anyActive); padActive=anyActive; }
+  elName.classList.toggle('idle', !anyActive);
 
   draw();
   requestAnimationFrame(loop);
 }
 
-// rounded-rect path helper
-function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r);
-  c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
-
-const gate=document.getElementById('gate');
-const note=document.getElementById('gateNote');
+const gate=document.getElementById('gate'), note=document.getElementById('gateNote');
 document.getElementById('go').addEventListener('click', async ()=>{
   const btn=document.getElementById('go'); btn.disabled=true; btn.textContent='Starting…';
   try{
@@ -351,22 +402,18 @@ document.getElementById('go').addEventListener('click', async ()=>{
     video.srcObject=stream; await video.play();
     await new Promise(r=>{ if(video.videoWidth) r(); else video.onloadedmetadata=r; });
     fitStage();
-
     await synth.init();
-    selectChord(0); buildStrings(); synth.setPad(padMidis(CHORDS[0])); elName.textContent=CHORDS[0].name;
-
+    selectChord(0); padActive=false;
     note.textContent='Loading hand-tracking model…';
     const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
     landmarker=await HandLandmarker.createFromOptions(vision,{
       baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate:"GPU" },
-      runningMode:"VIDEO", numHands:2
-    });
-
+      runningMode:"VIDEO", numHands:2 });
     gate.classList.add('hide');
     loop();
   }catch(err){
     console.error(err); btn.disabled=false; btn.textContent='Try again'; note.classList.add('err');
-    note.textContent = (err && err.name==='NotAllowedError')
+    note.textContent=(err && err.name==='NotAllowedError')
       ? 'Camera permission was denied. Allow access and try again.'
       : 'Could not start: '+(err && err.message ? err.message : err);
   }

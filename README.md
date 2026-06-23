@@ -18,8 +18,13 @@ Everything runs **100% in the browser** — no server, no data leaves your devic
   plucks — strum speed sets each note's brightness and volume.
 - Works with **one or two hands** — it's zone-based, so either hand can pick chords or
   strum depending on which side of the screen it's on.
+- **Make a fist** (or take your hands off the screen) to stop playing — the sustained chord
+  fades out smoothly and ringing notes decay naturally. Open your hand to resume.
 
-The strings light up and ripple as you pluck them, with particle bursts and lush reverb.
+The look is *devotional circuitry*: a PCB-trace background, harp strings rendered as copper
+traces with solder-pad nodes that light magenta when struck, silkscreened chord pads, CRT
+scanlines, and the flesh / machine / holy triangle on the start screen. The strings ripple
+and spark as you play, through lush convolution reverb.
 
 ## Tips
 
