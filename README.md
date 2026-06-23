@@ -1,49 +1,42 @@
-# Flux
+# Flux — gesture omnichord
 
-Control **voice effects** and **visual effects** with your hands. Your webcam tracks your
-gestures in real time (Google MediaPipe Hand Landmarker) and your microphone gets warped
-live through the Web Audio API — harmonies, pitch, echo, robot and more.
+A gesture-played **omnichord**. Your webcam tracks your hands (Google MediaPipe Hand
+Landmarker); a Web Audio synth makes the sound. **No microphone needed** — Flux generates
+its own audio.
 
 Everything runs **100% in the browser** — no server, no data leaves your device.
 
 🔗 **Live:** https://ojuliaspinola.github.io/Flux/
 
-## How it works
+## How to play
 
-A gesture picks the effect; your hand position fine-tunes it ("both combined").
+- **Left side = chord pads.** Hover your hand over a pad to select the chord. The diatonic
+  chords of C major are laid out top-to-bottom: **C, Dm, Em, F, G, Am, B°**. The selected
+  chord sustains softly, like an omnichord's chord buttons.
+- **Right side = the harp / strumplate.** Sweep your hand across the vertical strings to
+  strum the selected chord. **Sweep fast to arpeggiate**, move slowly for individual
+  plucks — strum speed sets each note's brightness and volume.
+- Works with **one or two hands** — it's zone-based, so either hand can pick chords or
+  strum depending on which side of the screen it's on.
 
-| Fingers | Effect | ↕ Height | ↔ Tone |
-|--------:|--------|----------|--------|
-| ✊ 0 | **Clean** (bypass) | — | — |
-| ☝️ 1 | **Harmonizer** — adds 3rd + 5th harmony voices | harmony volume | octave sparkle |
-| ✌️ 2 | **Pitch shift** (±1 octave) | pitch | fine-tune |
-| 🤟 3 | **Echo / Space** | echo amount | delay time |
-| 🖖 4 | **Robot** (ring modulation) | carrier pitch | dry ↔ robot mix |
-| 🖐️ 5 | **Telephone** (band-limited distortion) | drive | tone |
-
-- **Second hand height** controls the master volume.
-- Visuals: mirrored camera feed, neon hand skeleton, fingertip particles coloured per
-  effect, and motion trails (long on Echo) that pulse with your microphone level.
+The strings light up and ripple as you pluck them, with particle bursts and lush reverb.
 
 ## Tips
 
-- **Use headphones.** Speakers will feed back into the mic (mic processing is disabled on
-  purpose so the effects sound clean).
-- Works best in good lighting with your hand fully in frame.
-- Requires a browser with WebGL + Web Audio (Chrome, Edge, Safari, Firefox).
-- Camera + microphone require **HTTPS** — the live GitHub Pages URL works; for local dev
-  use a local server (below), not `file://`.
+- Turn your **sound on** (no headphones needed — there's no mic).
+- Good lighting and keeping your hand fully in frame improves tracking.
+- Works in Chrome, Edge, Safari, or Firefox with WebGL + Web Audio.
+- Camera requires **HTTPS** — the live URL works; for local dev use a local server (below),
+  not `file://`.
 
 ## Run locally
 
 ```bash
-# from the project folder
-python3 -m http.server 8000
-# then open http://localhost:8000
+python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
 ## Tech
 
 - [MediaPipe Tasks Vision](https://developers.google.com/mediapipe) — on-device hand tracking
-- Web Audio API — real-time DSP graph (pitch shifter after Chris Wilson's *jungle.js* technique)
+- Web Audio API — polyphonic synth, convolution reverb, per-note envelopes
 - Plain HTML/CSS/JS, no build step
